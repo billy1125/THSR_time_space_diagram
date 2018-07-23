@@ -97,8 +97,6 @@ def train_time_to_stations(list_start_end_station, list_passing_stations):
     time = []
     loc = []
 
-
-
     for item in list_passing_stations:
 
         station_id.append(item[0])
@@ -209,53 +207,3 @@ def midnight_train(list_start_end_station, list_passing_stations, over_night_stn
         nidmight_km = select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0]
 
     return nidmight_km
-
-#環島列車處理，例如：51、52車次，直接拆成兩條路線處理，以八堵車站、竹南車站為分界點
-def roundabout_train(train_time_space, line_dir):
-    output = []
-    row_number = -1
-
-    number1 = ''
-    number2 = ''
-
-    if line_dir == '0':
-        number1 = '1002'  # 八堵
-        number2 = '1028'  # 竹南
-    elif line_dir == '1':
-        number1 = '1028'
-        number2 = '1002'
-
-    train_time_space['Loc'] = train_time_space.index
-
-    for i in range(0, 3):
-        station = []
-        station_id = []
-        time = []
-        loc = []
-        temp = []
-        if i in [1, 2]:
-            row_number -= 1
-        while True:
-            row_number += 1
-            temp.append(train_time_space.iloc[row_number])
-
-            station_id.append(train_time_space.iloc[row_number, 1])
-            station.append(train_time_space.iloc[row_number, 0])
-            loc.append(train_time_space.iloc[row_number, 3])
-            time.append(train_time_space.iloc[row_number, 2])
-
-            if i == 2 and row_number == len(train_time_space) - 1:
-                break
-            if i == 0 and train_time_space.iloc[row_number, 1] == number1:
-                break
-            if i == 1 and train_time_space.iloc[row_number, 1] == number2:
-                break
-
-        dict = {"Station": station, "Time": time, "Loc": loc, "Station ID": station_id}
-
-        select_df = pd.DataFrame(dict)
-        select_df = select_df.set_index('Loc').interpolate(method='index')  # 估計通過時間
-
-        output.append(select_df)
-
-    return output

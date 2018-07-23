@@ -10,26 +10,19 @@ import numpy as np
 # stations_loc = {}
 
 dict_car_kind = {
-    '1131': 'local',
-    '1132': 'local',
-    '1100': 'tze_chiang_diesel',
-    '1101': 'tze_chiang',
-    '1102': 'taroko',
-    '1103': 'tze_chiang_diesel',
-    '1107': 'puyuma',
-    '1108': 'tze_chiang',
-    '1109': 'tze_chiang',
-    '110A': 'tze_chiang',
+    '08': 'local',
+    '06': 'tze_chiang_diesel',
+    '03': 'tze_chiang',
+    '02': 'taroko',
+    '01': 'puyuma',
     '110B': 'emu1200',
     '110C': 'emu300',
-    '110D': 'tze_chiang_diesel',
-    '110E': 'tze_chiang_diesel',
-    '110F': 'tze_chiang_diesel',
-    '1110': 'chu_kuang',
-    '1111': 'chu_kuang',
-    '1114': 'chu_kuang',
-    '1115': 'chu_kuang',
-    '1120': 'fu_hsing',
+    '12': 'chu_kuang',
+    '13': 'chu_kuang',
+    '14': 'chu_kuang',
+    '15': 'chu_kuang',
+    '16': 'chu_kuang',
+    '05': 'fu_hsing',
     '1140': 'ordinary',
     '0000': 'special'
     }
@@ -52,13 +45,13 @@ dict_line_kind = {
 }
 
 class Draw:
-    def __init__(self, location, date, line, version, height):
+    def __init__(self, location, date, line, version, height, make_time):
         self.location = location
         self.date = date
 
         filename = ''
         if location == '':
-            filename = 'OUTPUT/' + date + '.svg'
+            filename = 'OUTPUT\\' + date + '.svg'
         else:
             filename = location + date + '.svg'
         self.file_name = filename
@@ -85,13 +78,12 @@ class Draw:
                     if row[1] != 'NA':
                         self.stations_loc[row[1]] = float(row[3])
 
-        self.draw_background(version)
+        self.draw_background(version, make_time)
 
     #繪製基底圖
-    def draw_background(self, version):
-        localtime = time.asctime(time.localtime(time.time()))
+    def draw_background(self, version, make_time):
 
-        self.dwg.add(self.dwg.text(dict_line_kind[self.line] + ' 日期：' + self.date +'，運行圖均來自交通部MOTC公開資料所分析，僅供參考，正確資料與實際運轉狀況請以高鐵網站或公告為主。台灣高鐵Open Data轉檔運行圖程式版本：' + version + ' 轉檔時間：' + localtime, insert=(5, 20), fill='#000000'))
+        self.dwg.add(self.dwg.text(dict_line_kind[self.line] + ' 日期：' + self.date +'，運行圖均來自交通部MOTC公開資料所分析，僅供參考，正確資料與實際運轉狀況請以高鐵網站或公告為主。台灣高鐵Open Data轉檔運行圖程式版本：' + version + ' 轉檔時間：' + make_time, insert=(5, 20), fill='#000000'))
 
         #時間線
 
@@ -131,39 +123,32 @@ class Draw:
         
 
     #繪製車次線
-    def draw_trains(self, train_time_space, train_id, car_class, line):
+    def draw_trains(self, train_time_space, train_id, car_class):
         
         to_count_stations = True
         check_number = 0
-        midnight = -1
         color = dict_car_kind[car_class]
-        midnight_loc = -1
-        cheng_zhui_passing = {'1321': 0, '1118': 0}
-        cheng_zhui_local = False
 
         if to_count_stations == True:
             for i in range(0, len(train_time_space.index)):
                 if self.stations_loc.__contains__(train_time_space.iloc[i, 1]):
                     check_number += 1 #確認資料有超過兩筆
-
-        
-        if cheng_zhui_local == False:
                 
-            if check_number > 2: #資料超過兩筆才繪製，避免只有顯示起點終點車站的車次被繪入
-                path = 'M'
-                i = 0
-                while True:
-                    if self.stations_loc.__contains__(train_time_space.iloc[i, 1]):
-                        x = round(train_time_space.iloc[i, 2] * 10 + 50, 4)
-                        y = round(self.stations_loc[train_time_space.iloc[i, 1]] + 50, 4)
-                        path += str(x) + ',' + str(y) + ' '
-                        
-                    i += 1
+        if check_number > 2: #資料超過兩筆才繪製，避免只有顯示起點終點車站的車次被繪入
+            path = 'M'
+            i = 0
+            while True:
+                if self.stations_loc.__contains__(train_time_space.iloc[i, 1]):
+                    x = round(train_time_space.iloc[i, 2] * 10 + 50, 4)
+                    y = round(self.stations_loc[train_time_space.iloc[i, 1]] + 50, 4)
+                    path += str(x) + ',' + str(y) + ' '
 
-                    if i == len(train_time_space.index):
-                        break
-                
-                self.draw_line(train_id, path, color, '')
+                i += 1
+
+                if i == len(train_time_space.index):
+                    break
+
+            self.draw_line(train_id, path, color, '')
 
 
     
