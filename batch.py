@@ -12,10 +12,11 @@ import read_JSON_URL as motc_json_thsr
 
 # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-def main(argv_website_svg_location, argv_train_no):  # 程式執行段
+def main(argv_train_no):  # 程式執行段
 
-    version = '0.8'
+    version = '0.9'
     txt_output = ''
+    output_folder = os.getcwd() + '\OUTPUT\\'
 
     json_files = motc_json_thsr.read()
 
@@ -30,7 +31,7 @@ def main(argv_website_svg_location, argv_train_no):  # 程式執行段
     today_date = time.strftime("%Y%m%d", time.localtime())
     make_time = time.asctime(time.localtime(time.time()))
 
-    svg_output = svg_save.Draw('', today_date, 'LINE_THSR', version, 3000, make_time)
+    svg_output = svg_save.Draw(output_folder, today_date, 'LINE_THSR', version, 2000, make_time)
 
     for train_no in trains:  # 逐車次搜尋
 
@@ -71,14 +72,6 @@ def main(argv_website_svg_location, argv_train_no):  # 程式執行段
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4:
-        argv_website_svg_location = sys.argv[2]  # 參數1: 運行圖檔案存檔位置
-        argv_train_no = sys.argv[3]  # 參數2: 特定車次繪製
-    else:
-        argv_website_svg_location = 'OUTPUT'
-        argv_train_no = 'ALL'
+    argv_train_no = ''
 
-    if argv_train_no == 'ALL':
-        argv_train_no = ''
-
-    main(argv_website_svg_location, argv_train_no)
+    main(argv_train_no)

@@ -13,13 +13,6 @@ stations = basic_data.stations()
 #時間轉換(Locate.csv)
 time_loc = basic_data.time_loc()
 
-#讀取台鐵JSON
-def read_json(filename):
-    with open('JSON/' + filename, 'r', encoding='utf8') as data_file:    
-        data = json.load(data_file)
-    
-    return data
-
 #找出每一個車次
 def find_trains(data, train_no):
 
@@ -143,67 +136,67 @@ def train_time_to_stations(list_start_end_station, list_passing_stations):
 
 
 #跨午夜車次處理，基本邏輯，非車站內跨午夜則必須估計出午夜十二點的位置
-def midnight_train(list_start_end_station, list_passing_stations, over_night_stn):
-    
-    global time_loc
-
-    nidmight_km = 0
-
-    midnight_in_station = False
-
-    station = []
-    station_id = []
-    time = []
-    loc = []
-
-    i = 0
-
-    while True:
-        item = list_passing_stations[i]
-        if list_start_end_station.__contains__(item[0]):
-            ArrTime = int(time_loc[list_start_end_station[item[0]][0]])
-            DepTime = int(time_loc[list_start_end_station[item[0]][1]])
-                
-            if item[0] == over_night_stn:
-
-                if DepTime >= ArrTime: #插入一個跨午夜的虛擬車站，藉此估計列車所在的里程數
-                    station_id.append('-1')
-                    station.append('跨午夜')
-                    loc.append(np.NaN)
-                    time.append(1440)
-
-                    station_id.append(item[0])
-                    station.append(item[1])
-                    loc.append(float(item[3]))
-                    time.append(ArrTime + 1440) #要將跨午夜車站的時間加上1440估計較為適當
-
-                elif DepTime < ArrTime: #車站內跨日則跳過處理，於train_time_to_stations函數進行處理即可
-                    midnight_in_station = True
-                    
-            else:
-                station_id.append(item[0])
-                station.append(item[1])
-                loc.append(float(item[3]))
-                time.append(ArrTime)
-
-                station_id.append(item[0])
-                station.append(item[1])
-                loc.append(float(item[3]))
-                time.append(DepTime)
-
-        i += 1
-        if item[0] == over_night_stn:
-            break
-
-    dict = {"Station": station, "Time": time, "Loc": loc, "Station ID": station_id}
-
-    select_df = pd.DataFrame(dict)
-    # print(select_df)
-    select_df = select_df.interpolate(method='index') #估計午夜通過里程
-    
-    # print(select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0])
-
-    if midnight_in_station == False: #如果跨午夜車次不是在車站內跨夜，才將資料帶出
-        nidmight_km = select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0]
-
-    return nidmight_km
+# def midnight_train(list_start_end_station, list_passing_stations, over_night_stn):
+#
+#     global time_loc
+#
+#     nidmight_km = 0
+#
+#     midnight_in_station = False
+#
+#     station = []
+#     station_id = []
+#     time = []
+#     loc = []
+#
+#     i = 0
+#
+#     while True:
+#         item = list_passing_stations[i]
+#         if list_start_end_station.__contains__(item[0]):
+#             ArrTime = int(time_loc[list_start_end_station[item[0]][0]])
+#             DepTime = int(time_loc[list_start_end_station[item[0]][1]])
+#
+#             if item[0] == over_night_stn:
+#
+#                 if DepTime >= ArrTime: #插入一個跨午夜的虛擬車站，藉此估計列車所在的里程數
+#                     station_id.append('-1')
+#                     station.append('跨午夜')
+#                     loc.append(np.NaN)
+#                     time.append(1440)
+#
+#                     station_id.append(item[0])
+#                     station.append(item[1])
+#                     loc.append(float(item[3]))
+#                     time.append(ArrTime + 1440) #要將跨午夜車站的時間加上1440估計較為適當
+#
+#                 elif DepTime < ArrTime: #車站內跨日則跳過處理，於train_time_to_stations函數進行處理即可
+#                     midnight_in_station = True
+#
+#             else:
+#                 station_id.append(item[0])
+#                 station.append(item[1])
+#                 loc.append(float(item[3]))
+#                 time.append(ArrTime)
+#
+#                 station_id.append(item[0])
+#                 station.append(item[1])
+#                 loc.append(float(item[3]))
+#                 time.append(DepTime)
+#
+#         i += 1
+#         if item[0] == over_night_stn:
+#             break
+#
+#     dict = {"Station": station, "Time": time, "Loc": loc, "Station ID": station_id}
+#
+#     select_df = pd.DataFrame(dict)
+#     # print(select_df)
+#     select_df = select_df.interpolate(method='index') #估計午夜通過里程
+#
+#     # print(select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0])
+#
+#     if midnight_in_station == False: #如果跨午夜車次不是在車站內跨夜，才將資料帶出
+#         nidmight_km = select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0]
+#
+#     return nidmight_km

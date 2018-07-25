@@ -49,14 +49,10 @@ class Draw:
         self.location = location
         self.date = date
 
-        filename = ''
-        if location == '':
-            filename = 'OUTPUT\\' + date + '.svg'
-        else:
-            filename = location + date + '.svg'
-        self.file_name = filename
+        filename = date + '.svg'
+
+        self.file_name = location + filename
         self.line = line
-        
 
         self.dwg = None
         self.stations_to_draw = []
@@ -65,7 +61,7 @@ class Draw:
         self.height = height
 
         #背景、基本大小
-        self.dwg = svgwrite.Drawing(self.file_name, size = (14500, self.height + 100), profile='full', style='background:#b3fff0;font-family:Tahoma')
+        self.dwg = svgwrite.Drawing(self.file_name, size = (14500, self.height + 100), profile='full', style='background:#F5F5F5;font-family:Tahoma')
         self.dwg.add_stylesheet('style.css', title="sometext") 
         #處理所有車站基本資訊(Category.csv)
         with open('CSV/Category.csv', newline='', encoding='utf8') as csvfile:
