@@ -14,7 +14,7 @@ import read_JSON_URL as motc_json_thsr
 
 def main(argv_train_no):  # 程式執行段
 
-    version = '0.9'
+    version = '1.0b'
     txt_output = ''
     output_folder = os.getcwd() + '\OUTPUT\\'
 
@@ -37,9 +37,9 @@ def main(argv_train_no):  # 程式執行段
 
         count += 1
 
-        progress(count, total, '')
-
         train_id = train_no['DailyTrainInfo']['TrainNo']  # 車次號
+
+        progress(count, total, "目前正在轉換: 車次" + train_id)
 
         if train_id[0:1] == "0":
             train_id = train_id[1:4]
@@ -62,7 +62,7 @@ def main(argv_train_no):  # 程式執行段
 
         svg_output.draw_trains(train_time_space, train_id, car_class)
 
-        svg_output.save()
+    svg_output.save()
 
     txt_output += '完成 ok \n'
 

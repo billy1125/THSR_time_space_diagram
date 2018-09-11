@@ -127,16 +127,16 @@ class Draw:
 
         if to_count_stations == True:
             for i in range(0, len(train_time_space.index)):
-                if self.stations_loc.__contains__(train_time_space.iloc[i, 1]):
+                if self.stations_loc.__contains__(train_time_space.iloc[i, 2]):
                     check_number += 1 #確認資料有超過兩筆
                 
         if check_number > 2: #資料超過兩筆才繪製，避免只有顯示起點終點車站的車次被繪入
             path = 'M'
             i = 0
             while True:
-                if self.stations_loc.__contains__(train_time_space.iloc[i, 1]):
-                    x = round(train_time_space.iloc[i, 2] * 10 + 50, 4)
-                    y = round(self.stations_loc[train_time_space.iloc[i, 1]] + 50, 4)
+                if self.stations_loc.__contains__(train_time_space.iloc[i, 2]):
+                    x = round(train_time_space.iloc[i, 1] * 10 + 50, 4)
+                    y = round(self.stations_loc[train_time_space.iloc[i, 2]] + 50, 4)
                     path += str(x) + ',' + str(y) + ' '
 
                 i += 1
