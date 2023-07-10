@@ -6,11 +6,11 @@ from time import mktime
 import base64
 from requests import request
 from pprint import pprint
-
 import json
 
 app_id = 'd3901f01fc584f2990799e6b6cd38086'
-app_key = 'u19eifzTL99aUjr35g6rwDdi1RM'
+app_key = '_1WRKyDUrjWZVfVGtHuyQQujdzk'
+
 
 class Auth():
 
@@ -20,7 +20,8 @@ class Auth():
 
     def get_auth_header(self):
         xdate = format_date_time(mktime(datetime.now().timetuple()))
-        hashed = hmac.new(self.app_key.encode('utf8'), ('x-date: ' + xdate).encode('utf8'), sha1)
+        hashed = hmac.new(self.app_key.encode('utf8'),
+                          ('x-date: ' + xdate).encode('utf8'), sha1)
         signature = base64.b64encode(hashed.digest()).decode()
 
         authorization = 'hmac username="' + self.app_id + '", ' + \
@@ -30,14 +31,18 @@ class Auth():
         return {
             'Authorization': authorization,
             'x-date': format_date_time(mktime(datetime.now().timetuple())),
-            'Accept - Encoding': 'gzip'
+            'Accept-Encoding': 'gzip'
         }
 
 
 def read():
     a = Auth(app_id, app_key)
-    response = request('get', 'http://ptx.transportdata.tw/MOTC/v2/Rail/THSR/DailyTimetable/Today?$format=JSON', headers= a.get_auth_header())
-
+    response = request('get', 'https://ptx.transportdata.tw/MOTC/v2/Rail/THSR/DailyTimetable/Today', headers=a.get_auth_header())
     data = json.loads(response.content.decode('utf-8'))
-
     return data
+    # pprint(response.content)
+
+formatted_date = datetime.today().strftime("%Y%m%d")            # 取得當天日期
+data = read()
+with open('JSON/{0}.json'.format(formatted_date), 'w') as outfile:
+    json.dump(data, outfile)

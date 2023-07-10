@@ -1,0 +1,8 @@
+CAR_CODE,CAR_TAG
+1,direct
+2,skip_stop
+3,skip_stop
+5,all_stop
+6,skip_stop
+8,all_stop
+9,special

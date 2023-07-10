@@ -1,202 +1,153 @@
-import json
+# 運行圖SVG產出
+# 部分程式碼為 nedwu (https://github.com/nedwu) 所啟發，並且參考其專案部分程式碼 (https://github.com/nedwu/TRAOpenDataDiagramer)。
 
-import pandas as pd # 引用套件並縮寫為 pd
-import numpy as np
+import time
+import environment_variable as ev
 
-#自訂class與module
-import basic_data
+# 公用參數
+Globals = ev.GlobalVariables()
 
-
-#處理所有車站基本資訊(Stations.csv)
-stations = basic_data.stations()
-
-#時間轉換(Locate.csv)
-time_loc = basic_data.time_loc()
-
-#找出每一個車次
-def find_trains(data, train_no):
-
-    trains = []
-
-    if train_no == '':
-        for x in data: #逐車次搜尋
-            trains.append(x)
-    # elif train_no != '':
-    #     for x in data['TrainInfos']: #逐車次搜尋
-    #         if x['Train'] == train_no:
-    #             trains.append(x)
-
-    return trains
-
-#找出每一個車次的表定經過車站
-def find_train_stations(train_no):
-
-    list_start_end_station = {}
+class Diagram:
     
-    for station in train_no['StopTimes']:
-        list_start_end_station[station['StationID']] = [station['ArrivalTime'], station['DepartureTime'], station['StationID'], station['StopSequence']]
+    def __init__(self, stations_to_draw, location, date, line, width, height, diagram_hours):
 
-    return list_start_end_station
+        self.file_name = location + date + '.svg'
+        self.date = date
+        self.line = line
+        self.width = width
+        self.height = height
+        self.diagram_hours = diagram_hours
+        self.stations_to_draw = stations_to_draw        
+        self.fileHandler = open(self.file_name, 'w', encoding='utf-8')
+        self.fileHandler.write('<?xml version="1.0" encoding="utf-8" ?>')
+        self.fileHandler.write(
+            '<?xml-stylesheet href="style.css" type="text/css" title="sometext" alternate="no" media="screen"?>')
+        self.fileHandler.write(
+            '<svg baseProfile="full" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xml'
+            'ns:xlink="http://www.w3.org/1999/xlink" style="font-family:Tahoma" width="' + str(self.width) + '" height="' + str(self.height + 100) + '" version="1.1"><defs />')
 
-    
-#找出每一個車次所有會經過的車站，無論是否會停靠
-def find_stations(list_start_end_station, line, line_dir):
+        self._draw_background()
 
-    #起終點車站代碼
-    end_station_number = len(list_start_end_station) - 1
-    start_station = list(list_start_end_station)[0]
-    end_station = list(list_start_end_station)[end_station_number]
+    def _add_text(self, x, y, string, _color = None, _class = None, transform = None):
 
-    global stations
+        transformStr = ''
 
-    temp = []
-    station = start_station
+        if transform is not None :
+            transformStr = ' transform="' + transform + '"'
+        if _class is not None :
+            self.fileHandler.write( '<text class="' + _class + '" x="' + x + '" y="' + y + '"' + transformStr + '>' + string + '</text>' )
+        elif _color is not None :
+            self.fileHandler.write( '<text fill="' + _color + '" x="' + x + '" y="' + y + '"' + transformStr + '>' + string + '</text>' )
+        else :
+            self.fileHandler.write( '<text x="' + x + '" y="' + y + '"' + transformStr + '>' + string + '</text>' )
 
-    km = 0.0 #計算經過車站里程
-        
-    while True:
+    def _add_line(self, x1, y1, x2, y2, _color = None, _class = None ) :
 
-        temp.append([stations[station][0], stations[station][1], stations[station][3], km])
-        # print(stations[station][1])
-        if line_dir == 0:  #南下
+        if _class is not None :
+            self.fileHandler.write( '<line class="' + _class + '" x1="' + x1 + '" x2="' + x2 + '" y1="' + y1 + '" y2="' + y2 + '" />' )
+        elif _color is not None :
+            self.fileHandler.write( '<line stroke="' + _color + '" x1="' + x1 + '" x2="' + x2 + '" y1="' + y1 + '" y2="' + y2 + '" />' )
+        else :
+            self.fileHandler.write( '<line x1="' + x1 + '" x2="' + x2 + '" y1="' + y1 + '" y2="' + y2 + '" />' )
 
-            km += float(stations[station][10])
-            station = stations[station][4]
+    def _add_path( self, pathList, lineId, _color = None, _class = None, _emphasis = False ) :
 
-        elif line_dir == 1:  #北上
+        emphasisStr = '" style="stroke-width: 4" />' if _emphasis else '" />'
 
-            km += float(stations[station][11])
-            station = stations[station][5]
+        if _class is not None :
+            self.fileHandler.write( '<path class="' + _class + '" d="' + pathList + '" id="' + lineId + emphasisStr )
+        elif _color is not None :
+            self.fileHandler.write( '<path stroke="' + _color + '" d="' + pathList + '" id="' + lineId + emphasisStr )
+        else :
+            self.fileHandler.write( '<path d="' + pathList + '" id="' + lineId + emphasisStr )
 
-        if station == end_station:
-            temp.append([stations[station][0], stations[station][1], stations[station][3], km])
-            break
+    def _add_path_text(self, _line_id, _train_id, _class, _startOffset):
+        self.fileHandler.write( '<text><textPath class = "' + _class + '" startOffset = "' + _startOffset + '" href = "#' +
+                                _line_id + '"><tspan dy="-3" font-size="80%">' + _train_id + '</tspan></textPath></text>' )
 
-        if len(temp) > 200:
-            print(len(temp))
-            break
-            
-    list_passing_stations = temp
+    # 繪製基底圖
+    def _draw_background(self):
+        localtime = time.asctime(time.localtime(time.time()))
 
-    return list_passing_stations
+        self._add_text("5", "20",
+                       '{0} 日期：{1}，運行圖均來自TDX公開資料所分析，僅供參考，正確資料與實際運轉狀況請以阿里山森林鐵路網站或公告為主。阿里山森林鐵路JSON Open Data轉檔運行圖程式版本：{2} 轉檔時間：{3}'.format(Globals.OperationLines[self.line]['NAME'], self.date, Globals.Version, localtime),
+                       "#000000", None, None)
+        # 時間線
+        hours = self.diagram_hours
+        text_spacing_factor = 500
+        # after_midnight = ""
 
-#將所有經過車站找出，並且將通過車站的時間點估計出來
-def train_time_to_stations(list_start_end_station, list_passing_stations):
-    
-    global time_loc
+        # 小時
+        for i in range(0, len(hours)):
+            x = 50 + i * 600            
+            y = 0
+            self._add_line(str(x), "50", str(x), str(self.height + 50), None, "hour_line")
 
-    station = []
-    station_id = []
-    time = []
-    loc = []
+            while True:     
+                if (hours[i] == 24):
+                    after_midnight = "隔日"
+                    css = "hour_midnight"
+                else:
+                    after_midnight = ""
+                    css = "hour"
 
-    for item in list_passing_stations:
+                if y <= self.height:
+                    self._add_text(str(x), str(49 + y), "{0:0>2d}00 {1}".format(hours[i], after_midnight), None, css)
+                else:
+                    break
+                y += text_spacing_factor
 
-        station_id.append(item[0])
-        station.append(item[1])
-        loc.append(item[3])
+            if i != len(hours) - 1:  # 每10分鐘
+                for j in range(0, 5):
+                    x = 50 + i * 600 + (j + 1) * 100
+                    if j != 2:
+                        self._add_line(str(x), "50", str(x), str(self.height + 50), None, "min10_line")
+                    else:  # 30分鐘顏色不同
+                        self._add_line(str(x), "50", str(x), str(self.height + 50), None, "min30_line")
+                    y = 0
+                    while True:                               
+                        if y <= self.height:
+                            if j != 2:
+                                self._add_text(str(x), str(49 + y), str(j + 1) + "0", None, "min10", None)
+                            else:
+                                self._add_text(str(x), str(49 + y), str(j + 1) + "0", None, "min30", None)
+                        else:
+                            break
+                        y += text_spacing_factor
 
-        if list_start_end_station.__contains__(item[0]): #如果經過車站清單中包括停靠車站，則將出發時間再加入
-            #list_passing_stations[index].append(int(list_station[item[0]].replace(':','')))
-            ArrTime = int(time_loc[list_start_end_station[item[0]][0]])
-            DepTime = int(time_loc[list_start_end_station[item[0]][1]])
-
-            time.append(ArrTime)
-
-            if ArrTime > DepTime: #車站內跨午夜處理，將跨午夜車站通過時間增加1440與0，之後在svg_save重複繪製兩次
-                station_id.append('-1')
-                station.append('跨午夜')
-                loc.append(item[3])
-                time.append(1440)
-
-                station_id.append('-1')
-                station.append('跨午夜')
-                loc.append(item[3])
-                time.append(0)
-
-            if item[0] == 'End':
-                station_id.append(list_passing_stations[0][0])
+        # 車站線
+        for item in self.stations_to_draw:
+            y = float(item['SVGYAXIS']) + 50
+            if item['ID'] != 'NA':
+                self._add_line("50", str(y), str(self.width - 50), str(y), None, "station_line")
             else:
-                station_id.append(item[0])
-            station.append(item[1])
-            loc.append(item[3])
-            time.append(DepTime)
-        else:
-            #list_passing_stations[index].append(np.NaN)
-            time.append(np.NaN)
+                self._add_line("50", str(y), str(self.width - 50), str(y), None, "station_noserv_line")
+            for i in range(0, 31):
+                if item['ID']  != 'NA':
+                    self._add_text(str(5 + i * 600), str(y - 5), item['DSC'], "#000000", None, None)
+                else:
+                    self._add_text(str(5 + i * 600), str(y - 5), item['DSC'], "#c2c2a3", None, None)
 
-    dict = {"Station": station, "Time": time, "Loc": loc, "Station ID": station_id}
+    # 繪製線條
+    def draw_line(self, train_id, path, text_position, color):
+
+        # if option_id is None:
+        #     line_id = train_id
+        # elif option_id is not None:
+        #     line_id = "{0}-{1}".format(train_id, option_id)
+
+        if path != 'M':  # 避免無資料
+            self._add_path(path, train_id, None, color, None)
+            for item in text_position:
+                self._add_path_text(train_id, train_id, color, str(item))
+            # for i in range(0, 5):
+            #     self._add_path_text(train_id, train_id, color, str(20 * i) + "%")
+
+    # 存檔
+    def save_file(self):
+
+        self.fileHandler.write('</svg>')
+        self.fileHandler.close()
+
+        return '{0} 日期：{1} 運行圖繪製完成 \n'.format(Globals.OperationLines[self.line]['NAME'], self.date)
     
-    select_df = pd.DataFrame(dict)
-    #select_df = select_df.sort_values(by = 'Loc')
-    
-    select_df = select_df.set_index('Loc').interpolate(method='index') #估計通過時間
-
-    return select_df
-
-
-#跨午夜車次處理，基本邏輯，非車站內跨午夜則必須估計出午夜十二點的位置
-# def midnight_train(list_start_end_station, list_passing_stations, over_night_stn):
-#
-#     global time_loc
-#
-#     nidmight_km = 0
-#
-#     midnight_in_station = False
-#
-#     station = []
-#     station_id = []
-#     time = []
-#     loc = []
-#
-#     i = 0
-#
-#     while True:
-#         item = list_passing_stations[i]
-#         if list_start_end_station.__contains__(item[0]):
-#             ArrTime = int(time_loc[list_start_end_station[item[0]][0]])
-#             DepTime = int(time_loc[list_start_end_station[item[0]][1]])
-#
-#             if item[0] == over_night_stn:
-#
-#                 if DepTime >= ArrTime: #插入一個跨午夜的虛擬車站，藉此估計列車所在的里程數
-#                     station_id.append('-1')
-#                     station.append('跨午夜')
-#                     loc.append(np.NaN)
-#                     time.append(1440)
-#
-#                     station_id.append(item[0])
-#                     station.append(item[1])
-#                     loc.append(float(item[3]))
-#                     time.append(ArrTime + 1440) #要將跨午夜車站的時間加上1440估計較為適當
-#
-#                 elif DepTime < ArrTime: #車站內跨日則跳過處理，於train_time_to_stations函數進行處理即可
-#                     midnight_in_station = True
-#
-#             else:
-#                 station_id.append(item[0])
-#                 station.append(item[1])
-#                 loc.append(float(item[3]))
-#                 time.append(ArrTime)
-#
-#                 station_id.append(item[0])
-#                 station.append(item[1])
-#                 loc.append(float(item[3]))
-#                 time.append(DepTime)
-#
-#         i += 1
-#         if item[0] == over_night_stn:
-#             break
-#
-#     dict = {"Station": station, "Time": time, "Loc": loc, "Station ID": station_id}
-#
-#     select_df = pd.DataFrame(dict)
-#     # print(select_df)
-#     select_df = select_df.interpolate(method='index') #估計午夜通過里程
-#
-#     # print(select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0])
-#
-#     if midnight_in_station == False: #如果跨午夜車次不是在車站內跨夜，才將資料帶出
-#         nidmight_km = select_df[select_df.loc[:,"Station ID"] == '-1'].iloc[0, 0]
-#
-#     return nidmight_km
