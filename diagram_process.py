@@ -83,4 +83,4 @@ def set_train_path(line_kind, train_id, train_time_space, diagrams):
                     text_position.append(pos)
             accumulate_dist += item
 
-    diagrams[line_kind].draw_line(train_id, path, text_position, color)
+    diagrams[line_kind].draw_line(train_id[1:], path, text_position, color)
