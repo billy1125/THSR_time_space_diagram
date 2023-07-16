@@ -62,9 +62,11 @@ class SpaceTime:
             _time_space.append({'StationName': value[4], 'StationID': value[2], 'StopSequence': value[3], 'Time': float(SVG_X_Axis[value[0]])})
             _time_space.append({'StationName': value[4], 'StationID': value[2], 'StopSequence': value[3], 'Time': float(SVG_X_Axis[value[1]])})   
 
+        self._check_aftermidnight(_time_space)
+
         return _time_space  # 清單: [車站ID, 車站名稱, 里程位置, 與下一站相差公里數], 清單: 屬於哪一個支線
          
-    # 將車次通過車站時間轉入各營運路線的資料，設定通過車站的順序碼，並且推算跨午夜車次的距離
+    # 將車次通過車站時間轉入各營運路線的資料
     def _time_space_to_operation_lines(self, time_space):
         _operation_lines = {}
         _after_midnight_train = {}
@@ -93,4 +95,16 @@ class SpaceTime:
 
         return {"Operation_Lines": _operation_lines, "After_Midnight_Train": _after_midnight_train}  # 本日車次運行資料, 跨午夜車次午夜後的運行資料
 
-
+    def _check_aftermidnight(self, time_space):
+        index = -1
+        time = 0
+        for i in range(0, len(time_space)): 
+            if time <= time_space[i]['Time']:
+                time = time_space[i]['Time']
+            else:
+                index = i
+                time = time_space[i]['Time']
+        if index != -1:
+            for i in range(index, len(time_space)): 
+                time_space[i]['Time'] += 2880
+        

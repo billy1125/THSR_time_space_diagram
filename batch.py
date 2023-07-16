@@ -98,7 +98,7 @@ if __name__ == "__main__":
     Parameters = [] # 參數集：參數1: JSON 檔位置, 參數2: 運行圖檔案存檔位置, 參數3: 特定車次繪製
 
     print('************************************')
-    print('阿里山森林鐵路JSON轉檔運行圖程式 - 版本：{0}'.format(Globals.Version))
+    print('台灣高鐵JSON轉檔運行圖程式 - 版本：{0}'.format(Globals.Version))
     print('************************************\n')
 
     if len(sys.argv) == 4:

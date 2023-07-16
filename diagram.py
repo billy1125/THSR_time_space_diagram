@@ -70,7 +70,7 @@ class Diagram:
         localtime = time.asctime(time.localtime(time.time()))
 
         self._add_text("5", "20",
-                       '{0} 日期：{1}，運行圖均來自TDX公開資料所分析，僅供參考，正確資料與實際運轉狀況請以阿里山森林鐵路網站或公告為主。阿里山森林鐵路JSON Open Data轉檔運行圖程式版本：{2} 轉檔時間：{3}'.format(Globals.OperationLines[self.line]['NAME'], self.date, Globals.Version, localtime),
+                       '{0} 日期：{1}，運行圖均來自TDX公開資料所分析，僅供參考，正確資料與實際運轉狀況請以台灣高鐵網站或公告為主。台灣高鐵JSON Open Data轉檔運行圖程式版本：{2} 轉檔時間：{3}'.format(Globals.OperationLines[self.line]['NAME'], self.date, Globals.Version, localtime),
                        "#000000", None, None)
         # 時間線
         hours = self.diagram_hours
